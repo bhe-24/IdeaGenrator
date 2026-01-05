@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cendekia Aksara Idea Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@400;700&display=swap');
+
+        /* Konfigurasi Warna Custom */
+        :root {
+            --color-navy: #001f3f;
+            --color-mustard: #FFDB58; /* Mustard Yellow yang enak dilihat */
+            --color-mustard-dark: #e1c12e;
+        }
+
+        body {
+            background-color: #ffffff;
+            color: var(--color-navy);
+            font-family: 'Lato', sans-serif;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .text-navy { color: var(--color-navy); }
+        .bg-navy { background-color: var(--color-navy); }
+        
+        .text-mustard { color: #d4a000; }
+        .bg-mustard { background-color: var(--color-mustard); }
+        .bg-mustard-hover:hover { background-color: var(--color-mustard-dark); }
+        .border-mustard { border-color: var(--color-mustard); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d4a000; 
+            border-radius: 4px;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid var(--color-mustard-dark);
+            width: 24px;
+            height: 24px;
+            -webkit-animation: spin 1s linear infinite; /* Safari */
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="w-full py-6 px-4 border-b-2 border-mustard/30 sticky top-0 bg-white/95 backdrop-blur-sm z-50">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i data-lucide="feather" class="text-mustard w-8 h-8"></i>
+                <h1 class="text-2xl md:text-3xl font-bold tracking-wide text-navy">Cendekia Aksara</h1>
+            </div>
+            <div class="hidden md:block text-sm font-semibold opacity-70">
+                Idea Generator & Writing Challenge
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow w-full max-w-4xl mx-auto px-4 py-8 space-y-10">
+
+        <!-- 1. Generator Section (Langsung Muncul) -->
+        <section id="generatorSection" class="transition-all duration-500">
+            <div class="text-center space-y-4 mb-8">
+                <h2 class="text-3xl font-bold text-navy">Siap Menulis?</h2>
+                <p class="opacity-70 max-w-lg mx-auto">AI akan memberikan genre, ide, dan premis unik. Tugasmu adalah menulis cerpen berdasarkan ketentuan tersebut.</p>
+                <button onclick="generateChallenge()" id="generateBtn"
+                    class="bg-mustard text-navy px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center gap-3 mx-auto">
+                    <span id="genBtnText">Buat Tantangan Baru</span>
+                    <div id="genBtnLoader" class="loader hidden"></div>
+                    <i data-lucide="sparkles" id="genBtnIcon"></i>
+                </button>
+            </div>
+
+            <!-- Challenge Result Card -->
+            <div id="challengeCard" class="hidden bg-white border-2 border-mustard rounded-xl p-8 shadow-lg relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <i data-lucide="pen-tool" class="w-24 h-24 text-navy"></i>
+                </div>
+                
+                <h3 class="text-2xl font-bold mb-6 text-center border-b pb-4 border-gray-100">Tantangan Cerpen</h3>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="uppercase text-xs font-bold tracking-widest text-mustard">Genre</label>
+                        <p id="resGenre" class="text-xl font-bold text-navy">...</p>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="uppercase text-xs font-bold tracking-widest text-mustard">Ide Unik</label>
+                        <p id="resIdea" class="text-lg text-navy">...</p>
+                    </div>
+                </div>
+                
+                <div class="mt-6 space-y-2">
+                    <label class="uppercase text-xs font-bold tracking-widest text-mustard">Premis Utama</label>
+                    <div class="bg-slate-50 p-4 rounded-lg border-l-4 border-mustard">
+                        <p id="resPremise" class="text-lg italic text-navy leading-relaxed">...</p>
+                    </div>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-gray-100 flex justify-between items-center text-sm text-gray-500">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="file-text" class="w-4 h-4 text-mustard"></i>
+                        <span>Target: 700 - 5.000 Kata</span>
+                    </div>
+                    <button onclick="document.getElementById('writingSection').scrollIntoView({behavior: 'smooth'})" class="text-navy font-bold hover:underline">Mulai Menulis ↓</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Writing Section -->
+        <section id="writingSection" class="hidden transition-all duration-500">
+            <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                <div class="bg-navy text-white p-4 flex justify-between items-center">
+                    <h3 class="font-bold flex items-center gap-2">
+                        <i data-lucide="edit-3" class="text-mustard"></i>
+                        Lembar Kerja
+                    </h3>
+                    <div id="wordCountBadge" class="bg-white/10 px-3 py-1 rounded-full text-sm font-mono transition-colors">
+                        <span id="wordCount">0</span> / 5000 Kata
+                    </div>
+                </div>
+                <textarea id="storyInput" 
+                    class="w-full h-[500px] p-6 text-lg leading-relaxed focus:outline-none resize-y text-gray-800 font-serif placeholder-gray-300"
+                    placeholder="Mulailah menulis ceritamu di sini... Biarkan imajinasimu mengalir..."></textarea>
+                
+                <div class="bg-gray-50 p-4 border-t border-gray-200 flex justify-end">
+                    <button onclick="submitStory()" id="submitBtn" disabled
+                        class="bg-gray-300 text-gray-500 cursor-not-allowed px-6 py-2 rounded-lg font-bold transition-all flex items-center gap-2">
+                        <span id="subBtnText">Kirim untuk Evaluasi AI</span>
+                        <div id="subBtnLoader" class="loader hidden border-gray-500 border-t-transparent"></div>
+                    </button>
+                </div>
+                <div class="px-4 pb-2 text-xs text-right text-red-500 h-6" id="warningText">
+                    Minimal 700 kata untuk mengirim.
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Feedback Section -->
+        <section id="feedbackSection" class="hidden pb-20">
+            <!-- Warning Banner -->
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg flex items-start gap-3">
+                <i data-lucide="alert-triangle" class="text-yellow-600 w-6 h-6 flex-shrink-0"></i>
+                <div>
+                    <h4 class="font-bold text-yellow-800">PENTING: Unduh Karyamu!</h4>
+                    <p class="text-sm text-yellow-700 mt-1">
+                        Browser hanya menyimpan data sementara selama 1 jam. Silakan unduh dokumen (Cerpen + Evaluasi) sebelum menutup halaman.
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                <h2 class="text-2xl font-bold flex items-center gap-2">
+                    <i data-lucide="message-square" class="text-mustard"></i>
+                    Ulasan Cendekia Aksara
+                </h2>
+                
+                <!-- Download Button -->
+                <button onclick="downloadDocument()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold shadow-md transition-all flex items-center gap-2">
+                    <i data-lucide="download"></i>
+                    Unduh Dokumen (.doc)
+                </button>
+            </div>
+
+            <div class="bg-white border border-gray-200 rounded-xl p-8 shadow-lg prose prose-navy max-w-none">
+                <div id="aiFeedbackContent" class="leading-relaxed">
+                    <!-- Feedback injected here -->
+                </div>
+            </div>
+            
+            <button onclick="location.reload()" class="mt-8 mx-auto block text-navy underline hover:text-mustard transition-colors">
+                Mulai Tantangan Baru
+            </button>
+        </section>
+
+    </main>
+
+    <footer class="text-center py-6 text-sm text-gray-400 border-t border-gray-100 mt-auto">
+        &copy; Cendekia Aksara Idea Generator
+    </footer>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // --- KONFIGURASI API KEY ---
+        // PENTING: Untuk preview di sini, biarkan kosong ("").
+        // Jika dijalankan lokal, isi dengan API Key Gemini Anda.
+        const API_KEY = ""; 
+
+        // State Management
+        let currentChallenge = null;
+        let lastFeedbackMarkdown = ""; // Store for download
+        
+        // --- GEMINI API CALLER ---
+        async function callGemini(prompt) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
+
+            if (!response.ok) throw new Error('Gagal menghubungi AI. Cek API Key atau koneksi internet.');
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        // --- CHALLENGE GENERATOR LOGIC ---
+        async function generateChallenge() {
+            const btn = document.getElementById('generateBtn');
+            const btnText = document.getElementById('genBtnText');
+            const btnIcon = document.getElementById('genBtnIcon');
+            const loader = document.getElementById('genBtnLoader');
+
+            // UI Loading State
+            btn.disabled = true;
+            btnText.innerText = "Meracik Ide...";
+            btnIcon.classList.add('hidden');
+            loader.classList.remove('hidden');
+
+            const prompt = `
+                Berikan saya tantangan menulis cerita pendek dalam Bahasa Indonesia.
+                Format output HARUS JSON valid tanpa markdown block code.
+                Struktur JSON:
+                {
+                    "genre": "Genre cerita (misal: Cyberpunk Jawa, Misteri Sejarah, dll)",
+                    "ide_unik": "Satu kalimat ide inti yang tidak biasa",
+                    "premis": "Premis cerita yang spesifik dan menantang (maksimal 2 kalimat)"
+                }
+                Pastikan idenya kreatif, sastrawi, dan memancing imajinasi.
+            `;
+
+            try {
+                let result = await callGemini(prompt);
+                result = result.replace(/```json/g, '').replace(/```/g, '').trim();
+                currentChallenge = JSON.parse(result);
+
+                document.getElementById('resGenre').innerText = currentChallenge.genre;
+                document.getElementById('resIdea').innerText = currentChallenge.ide_unik;
+                document.getElementById('resPremise').innerText = currentChallenge.premis;
+
+                document.getElementById('challengeCard').classList.remove('hidden');
+                document.getElementById('writingSection').classList.remove('hidden');
+                
+                setTimeout(() => {
+                    document.getElementById('challengeCard').scrollIntoView({behavior: 'smooth', block: 'center'});
+                }, 100);
+
+            } catch (error) {
+                console.error(error);
+                alert("Gagal menghubungi AI. Pastikan koneksi internet lancar.");
+            } finally {
+                btn.disabled = false;
+                btnText.innerText = "Buat Tantangan Baru";
+                btnIcon.classList.remove('hidden');
+                loader.classList.add('hidden');
+            }
+        }
+
+        // --- WORD COUNT LOGIC ---
+        const storyInput = document.getElementById('storyInput');
+        const wordCountDisplay = document.getElementById('wordCount');
+        const submitBtn = document.getElementById('submitBtn');
+        const warningText = document.getElementById('warningText');
+        const wordCountBadge = document.getElementById('wordCountBadge');
+
+        storyInput.addEventListener('input', () => {
+            const text = storyInput.value.trim();
+            const count = text.length === 0 ? 0 : text.split(/\s+/).length;
+            wordCountDisplay.innerText = count;
+
+            if (count >= 700 && count <= 5000) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                submitBtn.classList.add('bg-navy', 'text-white', 'hover:bg-opacity-90');
+                wordCountBadge.classList.replace('bg-red-500', 'bg-green-100');
+                wordCountBadge.classList.replace('text-white', 'text-green-800');
+                warningText.innerText = "";
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                submitBtn.classList.remove('bg-navy', 'text-white', 'hover:bg-opacity-90');
+                wordCountBadge.classList.replace('bg-green-100', 'bg-red-500');
+                wordCountBadge.classList.replace('text-green-800', 'text-white');
+
+                if (count < 700) {
+                    warningText.innerText = `Masih kurang ${700 - count} kata lagi (Minimal 700).`;
+                } else if (count > 5000) {
+                    warningText.innerText = `Kelebihan ${count - 5000} kata (Maksimal 5000).`;
+                }
+            }
+        });
+
+        // --- SUBMIT & EVALUATE LOGIC ---
+        async function submitStory() {
+            if (!currentChallenge) return;
+
+            const storyText = storyInput.value;
+            const wordCount = parseInt(wordCountDisplay.innerText);
+
+            const btn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('subBtnText');
+            const loader = document.getElementById('subBtnLoader');
+            const feedbackSection = document.getElementById('feedbackSection');
+            const feedbackContent = document.getElementById('aiFeedbackContent');
+
+            btn.disabled = true;
+            btnText.innerText = "Sedang Mengulas Cerita...";
+            loader.classList.remove('hidden');
+
+            const prompt = `
+                Bertindaklah sebagai editor fiksi senior dan kritikus sastra yang adil namun tajam di "Cendekia Aksara".
+                TANTANGAN: Genre: ${currentChallenge.genre}, Ide: ${currentChallenge.ide_unik}, Premis: ${currentChallenge.premis}
+                CERITA PENGGUNA (${wordCount} kata):
+                "${storyText.substring(0, 15000)}"
+                
+                TUGAS: Berikan ulasan mendalam (Markdown).
+                1. Status Kepatuhan (700-5000 kata & Premis).
+                2. Kekuatan Cerita.
+                3. Kelemahan/Area Perbaikan.
+                4. Skor Kesesuaian (1-100).
+                5. Komentar Penutup.
+                Nada: Profesional, Cendekia, Ramah.
+            `;
+
+            try {
+                const result = await callGemini(prompt);
+                lastFeedbackMarkdown = result; // Store for download
+                feedbackContent.innerHTML = marked.parse(result);
+                
+                feedbackSection.classList.remove('hidden');
+                setTimeout(() => {
+                    feedbackSection.scrollIntoView({behavior: 'smooth'});
+                    
+                    // --- ALERT SESUAI PERMINTAAN ---
+                    alert("PERHATIAN: Harap segera unduh cerpen dan hasil evaluasi Anda. Data pada browser ini hanya bersifat sementara (maksimal 1 jam).");
+                    
+                }, 500);
+
+            } catch (error) {
+                console.error(error);
+                alert("Gagal melakukan evaluasi. Silakan coba lagi.");
+            } finally {
+                btn.disabled = false;
+                btnText.innerText = "Kirim untuk Evaluasi AI";
+                loader.classList.add('hidden');
+            }
+        }
+
+        // --- DOWNLOAD FUNCTION (Word Compatible) ---
+        function downloadDocument() {
+            if (!currentChallenge) return;
+
+            const storyText = storyInput.value.replace(/\n/g, "<br>");
+            const feedbackHtml = marked.parse(lastFeedbackMarkdown);
+            
+            // Template HTML untuk Word Document
+            const content = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset="utf-8">
+                    <title>${currentChallenge.genre} - Cendekia Aksara</title>
+                    <style>
+                        body { font-family: 'Times New Roman', serif; font-size: 12pt; }
+                        h1 { font-size: 18pt; color: #001f3f; }
+                        h2 { font-size: 16pt; color: #d4a000; margin-top: 20px; }
+                        .meta { background-color: #f0f0f0; padding: 10px; margin-bottom: 20px; }
+                        .story { line-height: 1.5; text-align: justify; }
+                        .feedback { border-top: 2px solid #000; margin-top: 30px; padding-top: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Tantangan Cendekia Aksara</h1>
+                    <div class="meta">
+                        <p><strong>Genre:</strong> ${currentChallenge.genre}</p>
+                        <p><strong>Ide Unik:</strong> ${currentChallenge.ide_unik}</p>
+                        <p><strong>Premis:</strong> ${currentChallenge.premis}</p>
+                    </div>
+
+                    <h2>Naskah Cerpen</h2>
+                    <div class="story">
+                        ${storyText}
+                    </div>
+
+                    <div class="feedback">
+                        <h2>Hasil Evaluasi AI</h2>
+                        ${feedbackHtml}
+                    </div>
+                    
+                    <hr>
+                    <p style="font-size: 10pt; color: gray; text-align: center;">Dibuat dengan Cendekia Aksara Idea Generator</p>
+                </body>
+                </html>
+            `;
+
+            // Membuat Blob
+            const blob = new Blob(['\ufeff', content], {
+                type: 'application/msword'
+            });
+
+            // Trigger Download
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Cendekia_Aksara_${Date.now()}.doc`; // .doc agar kompatibel dengan Word
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
