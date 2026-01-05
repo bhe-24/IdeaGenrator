@@ -13,7 +13,7 @@
         /* Konfigurasi Warna Custom */
         :root {
             --color-navy: #001f3f;
-            --color-mustard: #FFDB58; /* Mustard Yellow yang enak dilihat */
+            --color-mustard: #FFDB58;
             --color-mustard-dark: #e1c12e;
         }
 
@@ -35,17 +35,9 @@
         .bg-mustard-hover:hover { background-color: var(--color-mustard-dark); }
         .border-mustard { border-color: var(--color-mustard); }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #d4a000; 
-            border-radius: 4px;
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #d4a000; border-radius: 4px; }
 
         .loader {
             border: 4px solid #f3f3f3;
@@ -53,13 +45,29 @@
             border-top: 4px solid var(--color-mustard-dark);
             width: 24px;
             height: 24px;
-            -webkit-animation: spin 1s linear infinite; /* Safari */
             animation: spin 1s linear infinite;
         }
 
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        .modal {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        .modal.active .modal-content {
+            transform: scale(1);
         }
     </style>
 </head>
@@ -70,27 +78,41 @@
         <div class="max-w-4xl mx-auto flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <i data-lucide="feather" class="text-mustard w-8 h-8"></i>
-                <h1 class="text-2xl md:text-3xl font-bold tracking-wide text-navy">Cendekia Aksara</h1>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold tracking-wide text-navy leading-none">Cendekia Aksara</h1>
+                    <span class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Idea Generator</span>
+                </div>
             </div>
-            <div class="hidden md:block text-sm font-semibold opacity-70">
-                Idea Generator & Writing Challenge
+            
+            <!-- Quota Display -->
+            <div class="flex flex-col items-end">
+                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Status Sistem & Kuota</div>
+                <div class="flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                    <div id="quotaIndicator" class="w-2 h-2 rounded-full bg-green-500"></div>
+                    <!-- Spinner kecil saat loading data firebase -->
+                    <div id="quotaLoader" class="w-3 h-3 border-2 border-gray-300 border-t-navy rounded-full animate-spin"></div>
+                    <span id="quotaText" class="text-sm font-bold text-navy hidden">...</span>
+                </div>
             </div>
         </div>
     </nav>
 
     <main class="flex-grow w-full max-w-4xl mx-auto px-4 py-8 space-y-10">
 
-        <!-- 1. Generator Section (Langsung Muncul) -->
+        <!-- Generator Section -->
         <section id="generatorSection" class="transition-all duration-500">
             <div class="text-center space-y-4 mb-8">
                 <h2 class="text-3xl font-bold text-navy">Siap Menulis?</h2>
-                <p class="opacity-70 max-w-lg mx-auto">AI akan memberikan genre, ide, dan premis unik. Tugasmu adalah menulis cerpen berdasarkan ketentuan tersebut.</p>
-                <button onclick="generateChallenge()" id="generateBtn"
+                <p class="opacity-70 max-w-lg mx-auto">
+                    Dapatkan ide cerita unik. Kuota AI bersifat global. Jika habis atau terjadi gangguan, sistem otomatis beralih ke Mode Pustaka Offline.
+                </p>
+                <button onclick="window.generateChallenge()" id="generateBtn"
                     class="bg-mustard text-navy px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center gap-3 mx-auto">
                     <span id="genBtnText">Buat Tantangan Baru</span>
                     <div id="genBtnLoader" class="loader hidden"></div>
                     <i data-lucide="sparkles" id="genBtnIcon"></i>
                 </button>
+                <p id="modeIndicator" class="text-xs text-gray-400 font-bold mt-2 hidden">Mode: <span class="text-green-600">AI Online</span></p>
             </div>
 
             <!-- Challenge Result Card -->
@@ -129,7 +151,7 @@
             </div>
         </section>
 
-        <!-- 2. Writing Section -->
+        <!-- Writing Section -->
         <section id="writingSection" class="hidden transition-all duration-500">
             <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
                 <div class="bg-navy text-white p-4 flex justify-between items-center">
@@ -145,8 +167,9 @@
                     class="w-full h-[500px] p-6 text-lg leading-relaxed focus:outline-none resize-y text-gray-800 font-serif placeholder-gray-300"
                     placeholder="Mulailah menulis ceritamu di sini... Biarkan imajinasimu mengalir..."></textarea>
                 
-                <div class="bg-gray-50 p-4 border-t border-gray-200 flex justify-end">
-                    <button onclick="submitStory()" id="submitBtn" disabled
+                <div class="bg-gray-50 p-4 border-t border-gray-200 flex justify-end items-center gap-4">
+                    <span id="evaluationInfo" class="text-xs text-gray-500 italic hidden">Evaluasi tidak tersedia (Sistem Offline)</span>
+                    <button onclick="window.submitStory()" id="submitBtn" disabled
                         class="bg-gray-300 text-gray-500 cursor-not-allowed px-6 py-2 rounded-lg font-bold transition-all flex items-center gap-2">
                         <span id="subBtnText">Kirim untuk Evaluasi AI</span>
                         <div id="subBtnLoader" class="loader hidden border-gray-500 border-t-transparent"></div>
@@ -158,36 +181,22 @@
             </div>
         </section>
 
-        <!-- 3. Feedback Section -->
+        <!-- Feedback Section -->
         <section id="feedbackSection" class="hidden pb-20">
-            <!-- Warning Banner -->
-            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg flex items-start gap-3">
-                <i data-lucide="alert-triangle" class="text-yellow-600 w-6 h-6 flex-shrink-0"></i>
-                <div>
-                    <h4 class="font-bold text-yellow-800">PENTING: Unduh Karyamu!</h4>
-                    <p class="text-sm text-yellow-700 mt-1">
-                        Browser hanya menyimpan data sementara selama 1 jam. Silakan unduh dokumen (Cerpen + Evaluasi) sebelum menutup halaman.
-                    </p>
-                </div>
-            </div>
-
             <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                 <h2 class="text-2xl font-bold flex items-center gap-2">
                     <i data-lucide="message-square" class="text-mustard"></i>
                     Ulasan Cendekia Aksara
                 </h2>
                 
-                <!-- Download Button -->
-                <button onclick="downloadDocument()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold shadow-md transition-all flex items-center gap-2">
+                <button onclick="window.downloadDocument()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold shadow-md transition-all flex items-center gap-2">
                     <i data-lucide="download"></i>
                     Unduh Dokumen (.doc)
                 </button>
             </div>
 
             <div class="bg-white border border-gray-200 rounded-xl p-8 shadow-lg prose prose-navy max-w-none">
-                <div id="aiFeedbackContent" class="leading-relaxed">
-                    <!-- Feedback injected here -->
-                </div>
+                <div id="aiFeedbackContent" class="leading-relaxed"></div>
             </div>
             
             <button onclick="location.reload()" class="mt-8 mx-auto block text-navy underline hover:text-mustard transition-colors">
@@ -197,23 +206,226 @@
 
     </main>
 
+    <!-- Modal Popup -->
+    <div id="customModal" class="modal fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-navy/80 backdrop-blur-sm" onclick="window.closeModal()"></div>
+        <div class="modal-content bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden relative z-10">
+            <div class="bg-mustard p-4 flex justify-between items-center">
+                <h3 class="font-bold text-navy flex items-center gap-2">
+                    <i data-lucide="info" class="w-5 h-5"></i>
+                    <span id="modalTitle">Informasi</span>
+                </h3>
+                <button onclick="window.closeModal()" class="text-navy hover:bg-white/20 rounded-full p-1 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <p id="modalMessage" class="text-gray-700 leading-relaxed mb-6">Pesan modal disini...</p>
+                <div class="flex justify-end">
+                    <button onclick="window.closeModal()" class="bg-navy text-white px-6 py-2 rounded-lg font-bold hover:opacity-90 transition">
+                        Mengerti
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer class="text-center py-6 text-sm text-gray-400 border-t border-gray-100 mt-auto">
         &copy; Cendekia Aksara Idea Generator
     </footer>
 
-    <script>
-        // Initialize Icons
-        lucide.createIcons();
+    <!-- LOGIC SCRIPT TYPE MODULE UNTUK FIREBASE & APP -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
 
-        // --- KONFIGURASI API KEY ---
-        // PENTING: Untuk preview di sini, biarkan kosong ("").
-        // Jika dijalankan lokal, isi dengan API Key Gemini Anda.
+        // --- KONFIGURASI FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCuhmevYBaj2VvZXEjGFeYe_DY2QmdopHc",
+            authDomain: "goresanaksara-1a234.firebaseapp.com",
+            projectId: "goresanaksara-1a234",
+            storageBucket: "goresanaksara-1a234.firebasestorage.app",
+            messagingSenderId: "975817245608",
+            appId: "1:975817245608:web:9882ec9b72a47df662d39d",
+            measurementId: "G-N15WLSV8Z5"
+        };
+
+        // Initialize Firebase Services
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const analytics = getAnalytics(app);
+
+        // Sign in anonymously agar bisa akses database jika rules membutuhkan auth
+        signInAnonymously(auth).catch((error) => {
+            console.error("Gagal login anonim ke Firebase:", error);
+        });
+
+        // --- GEMINI API CONFIG ---
         const API_KEY = "AIzaSyDdNnIl0BFnK3ChmdMp5zE6dxod70AS3og"; 
+        const MAX_DAILY_QUOTA = 20;
 
-        // State Management
+        // --- VARIABLES ---
         let currentChallenge = null;
-        let lastFeedbackMarkdown = ""; // Store for download
+        let lastFeedbackMarkdown = "";
+        let currentGlobalUsage = 0; 
+        let isSystemOffline = false; // Flag jika AI Error (selain kuota habis)
+
+        // --- DATABASE OFFLINE ---
+        const offlineData = {
+            genres: [
+                "Cyberpunk Nusantara", "Misteri Sejarah Majapahit", "Realisme Magis Pedesaan", 
+                "Thriller Psikologis di Kos-kosan", "Romansa Dystopia Jakarta", "Horor Folklor Modern",
+                "Sci-Fi Biopunk Tropis", "Drama Keluarga Lintas Dimensi", "Komedi Gelap Perkantoran",
+                "Petualangan Steampunk Kolonial"
+            ],
+            ideas: [
+                "Seorang protagonis yang bisa mencium kebohongan dari bau keringat.",
+                "Dunia di mana hujan turun ke atas, bukan ke bawah.",
+                "Sebuah warung kopi yang buka di celah waktu antara detik ke-59 dan menit baru.",
+                "Karakter utama menemukan buku harian yang ditulis oleh dirinya sendiri dari masa depan.",
+                "Teknologi yang memungkinkan orang menjual kenangan buruk mereka.",
+                "Seorang hantu yang takut menakut-nakuti manusia.",
+                "Kota yang tenggelam setiap malam dan muncul kembali saat fajar.",
+                "Sebuah aplikasi kencan yang menjodohkan orang berdasarkan cara mereka mati nanti.",
+                "Seseorang terbangun dan menyadari semua orang di dunia menghilang kecuali satu musuhnya.",
+                "Pewaris tahta kerajaan gaib yang lebih memilih jadi driver ojol."
+            ],
+            premises: [
+                "Dia harus menyelamatkan orang yang paling dia benci untuk mencegah kiamat lokal.",
+                "Untuk mendapatkan kembali ingatannya, dia harus mengkhianati satu-satunya teman yang dia miliki.",
+                "Kejadian aneh dimulai ketika dia menemukan pintu tua di dinding kamarnya yang sebelumnya tidak ada.",
+                "Dia diberi kesempatan mengulang satu hari yang sama selamanya, tapi setiap pengulangan mengurangi usianya.",
+                "Sebuah surat misterius datang, mengklaim bahwa kehidupan yang dia jalani hanyalah simulasi beta.",
+                "Dia dituduh melakukan kejahatan yang belum terjadi, dan bukti-buktinya sangat meyakinkan.",
+                "Perjalanan pulang kampung berubah menjadi mimpi buruk ketika jalan tol tidak berujung.",
+                "Dia menemukan bahwa kucing peliharaannya adalah agen rahasia dari peradaban kuno.",
+                "Setiap kali dia berbohong, satu bagian tubuhnya menjadi transparan.",
+                "Dia harus memenangkan debat melawan bayangannya sendiri untuk bisa bangun dari koma."
+            ]
+        };
+
+        // --- FIREBASE QUOTA LOGIC ---
         
+        function initQuotaListener() {
+            const docRef = doc(db, "daily_limits", "global");
+            
+            onSnapshot(docRef, (docSnapshot) => {
+                const today = new Date().toDateString();
+                const loader = document.getElementById('quotaLoader');
+                const text = document.getElementById('quotaText');
+                
+                loader.classList.add('hidden');
+                text.classList.remove('hidden');
+
+                if (docSnapshot.exists()) {
+                    const data = docSnapshot.data();
+                    
+                    // Reset visual jika hari berganti
+                    if (data.date !== today) {
+                        currentGlobalUsage = 0;
+                        // Reset status offline juga karena hari baru mungkin limit API reset
+                        isSystemOffline = false; 
+                    } else {
+                        currentGlobalUsage = data.count || 0;
+                    }
+                } else {
+                    currentGlobalUsage = 0;
+                }
+                
+                updateQuotaUI();
+            }, (error) => {
+                console.error("Error listening to quota:", error);
+                // Jika koneksi ke Firebase gagal, anggap offline
+                isSystemOffline = true;
+                updateQuotaUI();
+            });
+        }
+
+        async function consumeQuota() {
+            const docRef = doc(db, "daily_limits", "global");
+            const today = new Date().toDateString();
+            
+            try {
+                const result = await runTransaction(db, async (transaction) => {
+                    const sfDoc = await transaction.get(docRef);
+                    
+                    if (!sfDoc.exists()) {
+                        transaction.set(docRef, { date: today, count: 1 });
+                        return "success";
+                    }
+
+                    const data = sfDoc.data();
+                    
+                    if (data.date !== today) {
+                        transaction.update(docRef, { date: today, count: 1 });
+                        return "success";
+                    }
+
+                    if (data.count >= MAX_DAILY_QUOTA) {
+                        return "limit_reached";
+                    }
+
+                    transaction.update(docRef, { count: data.count + 1 });
+                    return "success";
+                });
+
+                if (result === "limit_reached") {
+                    throw new Error("QUOTA_EXCEEDED");
+                }
+                return true;
+
+            } catch (e) {
+                console.error("Quota Transaction Failed:", e);
+                throw e; 
+            }
+        }
+
+        function updateQuotaUI() {
+            const indicator = document.getElementById('quotaIndicator');
+            const text = document.getElementById('quotaText');
+            const modeInd = document.getElementById('modeIndicator');
+            const evalInfo = document.getElementById('evaluationInfo');
+
+            // Logika Gabungan: Kuota Habis ATAU Sistem Error
+            let remaining = Math.max(0, MAX_DAILY_QUOTA - currentGlobalUsage);
+            
+            // Jika sistem dideteksi offline (misal API Error), paksa tampilan 0/Merah
+            if (isSystemOffline) {
+                remaining = 0; 
+            }
+
+            text.innerText = `${remaining}/${MAX_DAILY_QUOTA}`;
+
+            if (remaining === 0) {
+                indicator.classList.remove('bg-green-500');
+                indicator.classList.add('bg-red-500');
+                text.classList.add('text-red-600');
+                
+                modeInd.classList.remove('hidden');
+                
+                if (isSystemOffline) {
+                    modeInd.innerHTML = `Mode: <span class="text-red-600">Offline (Gangguan Sistem)</span>`;
+                    evalInfo.innerText = "Evaluasi tidak tersedia (Gangguan Sistem)";
+                } else {
+                    modeInd.innerHTML = `Mode: <span class="text-mustard-dark">Pustaka Offline (Kuota Habis)</span>`;
+                    evalInfo.innerText = "Evaluasi tidak tersedia (Kuota Habis)";
+                }
+                
+                evalInfo.classList.remove('hidden');
+            } else {
+                indicator.classList.add('bg-green-500');
+                indicator.classList.remove('bg-red-500');
+                text.classList.remove('text-red-600');
+                
+                modeInd.classList.remove('hidden');
+                modeInd.innerHTML = `Mode: <span class="text-green-600">AI Online</span>`;
+                evalInfo.classList.add('hidden');
+            }
+        }
+
         // --- GEMINI API CALLER ---
         async function callGemini(prompt) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
@@ -226,64 +438,214 @@
                 })
             });
 
-            if (!response.ok) throw new Error('Gagal menghubungi AI. Cek API Key atau koneksi internet.');
+            if (!response.ok) {
+                // Deteksi spesifik jika error dari AI (misal 429 Too Many Requests atau 400 Bad Request)
+                throw new Error('AI_ERROR');
+            }
             const data = await response.json();
             return data.candidates[0].content.parts[0].text;
         }
 
-        // --- CHALLENGE GENERATOR LOGIC ---
-        async function generateChallenge() {
+        // --- OFFLINE GENERATOR ---
+        function generateOfflineChallenge() {
+            const g = offlineData.genres[Math.floor(Math.random() * offlineData.genres.length)];
+            const i = offlineData.ideas[Math.floor(Math.random() * offlineData.ideas.length)];
+            const p = offlineData.premises[Math.floor(Math.random() * offlineData.premises.length)];
+
+            return {
+                genre: g,
+                ide_unik: i,
+                premis: p,
+                is_offline: true
+            };
+        }
+
+        // --- GLOBAL FUNCTIONS ---
+
+        window.generateChallenge = async function() {
             const btn = document.getElementById('generateBtn');
             const btnText = document.getElementById('genBtnText');
-            const btnIcon = document.getElementById('genBtnIcon');
             const loader = document.getElementById('genBtnLoader');
+            const icon = document.getElementById('genBtnIcon');
 
-            // UI Loading State
             btn.disabled = true;
-            btnText.innerText = "Meracik Ide...";
-            btnIcon.classList.add('hidden');
             loader.classList.remove('hidden');
-
-            const prompt = `
-                Berikan saya tantangan menulis cerita pendek dalam Bahasa Indonesia.
-                Format output HARUS JSON valid tanpa markdown block code.
-                Struktur JSON:
-                {
-                    "genre": "Genre cerita (misal: Cyberpunk Jawa, Misteri Sejarah, dll)",
-                    "ide_unik": "Satu kalimat ide inti yang tidak biasa",
-                    "premis": "Premis cerita yang spesifik dan menantang (maksimal 2 kalimat)"
-                }
-                Pastikan idenya kreatif, sastrawi, dan memancing imajinasi.
-            `;
+            icon.classList.add('hidden');
 
             try {
+                // 1. Coba konsumsi kuota Firebase
+                // Jika sistem sudah terdeteksi offline sebelumnya, jangan coba ambil kuota
+                if (isSystemOffline) throw new Error("AI_ERROR");
+
+                await consumeQuota();
+
+                // 2. Jika kuota aman, coba panggil AI
+                btnText.innerText = "Meracik Ide (AI)...";
+                const prompt = `
+                    Berikan saya tantangan menulis cerita pendek dalam Bahasa Indonesia.
+                    Format output HARUS JSON valid tanpa markdown block code.
+                    Struktur JSON:
+                    {
+                        "genre": "Genre cerita (misal: Cyberpunk Jawa, Misteri Sejarah, dll)",
+                        "ide_unik": "Satu kalimat ide inti yang tidak biasa",
+                        "premis": "Premis cerita yang spesifik dan menantang (maksimal 2 kalimat)"
+                    }
+                    Pastikan idenya kreatif, sastrawi, dan memancing imajinasi.
+                `;
+                
                 let result = await callGemini(prompt);
                 result = result.replace(/```json/g, '').replace(/```/g, '').trim();
                 currentChallenge = JSON.parse(result);
-
-                document.getElementById('resGenre').innerText = currentChallenge.genre;
-                document.getElementById('resIdea').innerText = currentChallenge.ide_unik;
-                document.getElementById('resPremise').innerText = currentChallenge.premis;
-
-                document.getElementById('challengeCard').classList.remove('hidden');
-                document.getElementById('writingSection').classList.remove('hidden');
-                
-                setTimeout(() => {
-                    document.getElementById('challengeCard').scrollIntoView({behavior: 'smooth', block: 'center'});
-                }, 100);
+                currentChallenge.is_offline = false;
 
             } catch (error) {
-                console.error(error);
-                alert("Gagal menghubungi AI. Pastikan koneksi internet lancar.");
+                // LOGIKA DETEKSI ERROR & SWITCH MODE
+                
+                let modalTitle = "Koneksi/AI Error";
+                let modalMsg = "Gagal menghubungi AI. Mengalihkan ke Mode Offline.";
+
+                if (error.message === "QUOTA_EXCEEDED") {
+                    modalTitle = "Kuota Global Habis";
+                    modalMsg = "Kuota harian (20 request) telah habis. Anda dialihkan ke <b>Mode Pustaka Offline</b>.";
+                } else if (error.message === "AI_ERROR" || error.message.includes("fetch")) {
+                    // Ini yang diminta: Deteksi error AI dan matikan indikator
+                    isSystemOffline = true;
+                    updateQuotaUI(); // Update UI jadi Merah
+                    modalTitle = "Gangguan Sistem AI";
+                    modalMsg = "Maaf, sistem AI sedang mengalami gangguan atau limit. Sistem otomatis beralih ke <b>Mode Offline</b>.";
+                } else {
+                    console.error(error);
+                }
+
+                window.showModal(modalTitle, modalMsg);
+
+                // Generate Offline Content
+                btnText.innerText = "Mengambil Ide Pustaka...";
+                await new Promise(r => setTimeout(r, 500)); 
+                currentChallenge = generateOfflineChallenge();
+            }
+
+            // Render Result
+            document.getElementById('resGenre').innerText = currentChallenge.genre;
+            document.getElementById('resIdea').innerText = currentChallenge.ide_unik;
+            document.getElementById('resPremise').innerText = currentChallenge.premis;
+
+            document.getElementById('challengeCard').classList.remove('hidden');
+            document.getElementById('writingSection').classList.remove('hidden');
+            
+            setTimeout(() => {
+                document.getElementById('challengeCard').scrollIntoView({behavior: 'smooth', block: 'center'});
+            }, 100);
+
+            btn.disabled = false;
+            btnText.innerText = "Buat Tantangan Baru";
+            loader.classList.add('hidden');
+            icon.classList.remove('hidden');
+        };
+
+        window.submitStory = async function() {
+            if (!currentChallenge) return;
+
+            // Cek visual
+            if (currentGlobalUsage >= MAX_DAILY_QUOTA || isSystemOffline) {
+                 window.showModal("Fitur Tidak Tersedia", "Maaf, fitur evaluasi tidak tersedia saat ini (Kuota Habis atau Gangguan Sistem). Silakan unduh cerpen Anda.");
+                 return;
+            }
+
+            const storyText = document.getElementById('storyInput').value;
+            const wordCount = parseInt(document.getElementById('wordCount').innerText);
+            const btn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('subBtnText');
+            const loader = document.getElementById('subBtnLoader');
+            const feedbackSection = document.getElementById('feedbackSection');
+            const feedbackContent = document.getElementById('aiFeedbackContent');
+
+            btn.disabled = true;
+            btnText.innerText = "Sedang Mengulas...";
+            loader.classList.remove('hidden');
+
+            try {
+                await consumeQuota();
+
+                const prompt = `
+                    Bertindaklah sebagai editor fiksi senior.
+                    TANTANGAN: Genre: ${currentChallenge.genre}, Ide: ${currentChallenge.ide_unik}, Premis: ${currentChallenge.premis}
+                    CERITA PENGGUNA (${wordCount} kata):
+                    "${storyText.substring(0, 15000)}"
+                    TUGAS: Berikan ulasan mendalam (Markdown).
+                `;
+
+                const result = await callGemini(prompt);
+                lastFeedbackMarkdown = result; 
+                feedbackContent.innerHTML = marked.parse(result);
+                
+                feedbackSection.classList.remove('hidden');
+                setTimeout(() => {
+                    feedbackSection.scrollIntoView({behavior: 'smooth'});
+                    window.showModal("PENTING: Unduh Karyamu!", "Harap segera unduh cerpen dan hasil evaluasi Anda.<br>Data pada browser ini hanya bersifat sementara.");
+                }, 500);
+
+            } catch (error) {
+                if (error.message === "AI_ERROR" || error.message.includes("fetch")) {
+                    isSystemOffline = true;
+                    updateQuotaUI();
+                    window.showModal("Gagal Evaluasi", "Terjadi gangguan pada sistem AI. Silakan coba lagi nanti atau unduh cerpen Anda.");
+                } else if (error.message === "QUOTA_EXCEEDED") {
+                     window.showModal("Kuota Habis", "Maaf, saat proses berjalan, kuota global telah habis.");
+                } else {
+                     window.showModal("Error", "Terjadi kesalahan. Silakan coba lagi.");
+                }
             } finally {
                 btn.disabled = false;
-                btnText.innerText = "Buat Tantangan Baru";
-                btnIcon.classList.remove('hidden');
+                btnText.innerText = "Kirim untuk Evaluasi AI";
                 loader.classList.add('hidden');
             }
-        }
+        };
 
-        // --- WORD COUNT LOGIC ---
+        window.downloadDocument = function() {
+            if (!currentChallenge) return;
+            const storyText = document.getElementById('storyInput').value.replace(/\n/g, "<br>");
+            const feedbackHtml = lastFeedbackMarkdown ? marked.parse(lastFeedbackMarkdown) : "<p><em>Evaluasi tidak tersedia.</em></p>";
+            
+            const content = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head><meta charset="utf-8"><title>${currentChallenge.genre}</title></head>
+                <body style="font-family: 'Times New Roman', serif;">
+                    <h1>${currentChallenge.genre}</h1>
+                    <p><strong>Ide:</strong> ${currentChallenge.ide_unik}</p>
+                    <p><strong>Premis:</strong> ${currentChallenge.premis}</p>
+                    <hr>
+                    ${storyText}
+                    <hr>
+                    <h3>Evaluasi AI</h3>
+                    ${feedbackHtml}
+                </body>
+                </html>
+            `;
+            const blob = new Blob(['\ufeff', content], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Cendekia_Aksara_${Date.now()}.doc`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        // --- MODAL UTILS ---
+        window.showModal = function(title, message) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerHTML = message;
+            document.getElementById('customModal').classList.add('active');
+        };
+
+        window.closeModal = function() {
+            document.getElementById('customModal').classList.remove('active');
+        };
+
+        // --- INIT ---
+        lucide.createIcons();
+        
         const storyInput = document.getElementById('storyInput');
         const wordCountDisplay = document.getElementById('wordCount');
         const submitBtn = document.getElementById('submitBtn');
@@ -294,20 +656,38 @@
             const text = storyInput.value.trim();
             const count = text.length === 0 ? 0 : text.split(/\s+/).length;
             wordCountDisplay.innerText = count;
+            
+            const isWordCountValid = count >= 700 && count <= 5000;
+            // Cek visual quota & status sistem
+            const quotaAvailable = (currentGlobalUsage < MAX_DAILY_QUOTA) && !isSystemOffline;
 
-            if (count >= 700 && count <= 5000) {
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
-                submitBtn.classList.add('bg-navy', 'text-white', 'hover:bg-opacity-90');
+            if (isWordCountValid) {
                 wordCountBadge.classList.replace('bg-red-500', 'bg-green-100');
                 wordCountBadge.classList.replace('text-white', 'text-green-800');
                 warningText.innerText = "";
+                
+                if (quotaAvailable) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                    submitBtn.classList.add('bg-navy', 'text-white', 'hover:bg-opacity-90');
+                } else {
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                    submitBtn.classList.remove('bg-navy', 'text-white', 'hover:bg-opacity-90');
+                    if (isSystemOffline) {
+                        warningText.innerText = "Kata terpenuhi, namun sistem sedang gangguan (Offline).";
+                    } else {
+                        warningText.innerText = "Kata terpenuhi, namun kuota evaluasi global habis.";
+                    }
+                    warningText.classList.replace('text-red-500', 'text-mustard-dark');
+                }
             } else {
                 submitBtn.disabled = true;
                 submitBtn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
                 submitBtn.classList.remove('bg-navy', 'text-white', 'hover:bg-opacity-90');
                 wordCountBadge.classList.replace('bg-green-100', 'bg-red-500');
                 wordCountBadge.classList.replace('text-green-800', 'text-white');
+                warningText.classList.replace('text-mustard-dark', 'text-red-500');
 
                 if (count < 700) {
                     warningText.innerText = `Masih kurang ${700 - count} kata lagi (Minimal 700).`;
@@ -317,122 +697,8 @@
             }
         });
 
-        // --- SUBMIT & EVALUATE LOGIC ---
-        async function submitStory() {
-            if (!currentChallenge) return;
+        initQuotaListener();
 
-            const storyText = storyInput.value;
-            const wordCount = parseInt(wordCountDisplay.innerText);
-
-            const btn = document.getElementById('submitBtn');
-            const btnText = document.getElementById('subBtnText');
-            const loader = document.getElementById('subBtnLoader');
-            const feedbackSection = document.getElementById('feedbackSection');
-            const feedbackContent = document.getElementById('aiFeedbackContent');
-
-            btn.disabled = true;
-            btnText.innerText = "Sedang Mengulas Cerita...";
-            loader.classList.remove('hidden');
-
-            const prompt = `
-                Bertindaklah sebagai editor fiksi senior dan kritikus sastra yang adil namun tajam di "Cendekia Aksara".
-                TANTANGAN: Genre: ${currentChallenge.genre}, Ide: ${currentChallenge.ide_unik}, Premis: ${currentChallenge.premis}
-                CERITA PENGGUNA (${wordCount} kata):
-                "${storyText.substring(0, 15000)}"
-                
-                TUGAS: Berikan ulasan mendalam (Markdown).
-                1. Status Kepatuhan (700-5000 kata & Premis).
-                2. Kekuatan Cerita.
-                3. Kelemahan/Area Perbaikan.
-                4. Skor Kesesuaian (1-100).
-                5. Komentar Penutup.
-                Nada: Profesional, Cendekia, Ramah.
-            `;
-
-            try {
-                const result = await callGemini(prompt);
-                lastFeedbackMarkdown = result; // Store for download
-                feedbackContent.innerHTML = marked.parse(result);
-                
-                feedbackSection.classList.remove('hidden');
-                setTimeout(() => {
-                    feedbackSection.scrollIntoView({behavior: 'smooth'});
-                    
-                    // --- ALERT SESUAI PERMINTAAN ---
-                    alert("PERHATIAN: Harap segera unduh cerpen dan hasil evaluasi Anda. Data pada browser ini hanya bersifat sementara (maksimal 1 jam).");
-                    
-                }, 500);
-
-            } catch (error) {
-                console.error(error);
-                alert("Gagal melakukan evaluasi. Silakan coba lagi.");
-            } finally {
-                btn.disabled = false;
-                btnText.innerText = "Kirim untuk Evaluasi AI";
-                loader.classList.add('hidden');
-            }
-        }
-
-        // --- DOWNLOAD FUNCTION (Word Compatible) ---
-        function downloadDocument() {
-            if (!currentChallenge) return;
-
-            const storyText = storyInput.value.replace(/\n/g, "<br>");
-            const feedbackHtml = marked.parse(lastFeedbackMarkdown);
-            
-            // Template HTML untuk Word Document
-            const content = `
-                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-                <head>
-                    <meta charset="utf-8">
-                    <title>${currentChallenge.genre} - Cendekia Aksara</title>
-                    <style>
-                        body { font-family: 'Times New Roman', serif; font-size: 12pt; }
-                        h1 { font-size: 18pt; color: #001f3f; }
-                        h2 { font-size: 16pt; color: #d4a000; margin-top: 20px; }
-                        .meta { background-color: #f0f0f0; padding: 10px; margin-bottom: 20px; }
-                        .story { line-height: 1.5; text-align: justify; }
-                        .feedback { border-top: 2px solid #000; margin-top: 30px; padding-top: 20px; }
-                    </style>
-                </head>
-                <body>
-                    <h1>Tantangan Cendekia Aksara</h1>
-                    <div class="meta">
-                        <p><strong>Genre:</strong> ${currentChallenge.genre}</p>
-                        <p><strong>Ide Unik:</strong> ${currentChallenge.ide_unik}</p>
-                        <p><strong>Premis:</strong> ${currentChallenge.premis}</p>
-                    </div>
-
-                    <h2>Naskah Cerpen</h2>
-                    <div class="story">
-                        ${storyText}
-                    </div>
-
-                    <div class="feedback">
-                        <h2>Hasil Evaluasi AI</h2>
-                        ${feedbackHtml}
-                    </div>
-                    
-                    <hr>
-                    <p style="font-size: 10pt; color: gray; text-align: center;">Dibuat dengan Cendekia Aksara Idea Generator</p>
-                </body>
-                </html>
-            `;
-
-            // Membuat Blob
-            const blob = new Blob(['\ufeff', content], {
-                type: 'application/msword'
-            });
-
-            // Trigger Download
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `Cendekia_Aksara_${Date.now()}.doc`; // .doc agar kompatibel dengan Word
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
     </script>
 </body>
 </html>
